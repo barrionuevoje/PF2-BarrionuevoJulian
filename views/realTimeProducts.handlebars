@@ -1,4 +1,17 @@
-{{#extend "main"}}
+<!-- realTimeProducts.handlebars -->
 <h1>Productos en Tiempo Real</h1>
-<ul id="product-list"></ul>
-{{/extend}}
+<ul id="productList">
+    {{#each products}}
+        <li>{{this.title}} - ${{this.price}}</li>
+    {{/each}}
+</ul>
+
+<!-- Formulario para agregar un producto -->
+<form id="addProductForm">
+    <input type="text" id="title" placeholder="Título del producto" required>
+    <input type="number" id="price" placeholder="Precio" required>
+    <button type="submit">Agregar Producto</button>
+</form>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/client.js"></script>

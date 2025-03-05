@@ -1,23 +1,46 @@
-const socket = io();  
-const productList = document.getElementById('product-list');
-const productForm = document.getElementById('productForm');
+const socket = io();
 
-socket.on('updateProducts', (products) => {
-    productList.innerHTML = '';
-    products.forEach((product) => {
+// Escuchar el evento 'productList' para actualizar la lista de productos
+socket.on('productList', (products) => {
+    const productList = document.getElementById('productList');
+    productList.innerHTML = '';  // Limpiar la lista actual
+    products.forEach(product => {
         const li = document.createElement('li');
         li.textContent = `${product.title} - $${product.price}`;
         productList.appendChild(li);
     });
 });
 
-productForm.addEventListener('submit', (event) => {
+// Enviar un nuevo producto al servidor cuando se envíe el formulario
+document.getElementById('addProductForm').addEventListener('submit', (event) => {
     event.preventDefault();
-    const title = document.getElementById('title').value;
-    const price = document.getElementById('price').value;
     
-    socket.emit('nuevoProducto', { title, price });
-    
-    document.getElementById('title').value = '';
-    document.getElementById('price').value = '';
+    const newProduct = {
+        title: document.getElementById('title').value,
+        price: parseFloat(document.getElementById('price').value),
+    };
+
+    // Emitir el evento para agregar un producto
+    socket.emit('addProduct', newProduct);
+
+    // Añadir el evento de eliminación
+socket.on('productList', (products) => {
+    const productList = document.getElementById('productList');
+    productList.innerHTML = '';
+    products.forEach(product => {
+        const li = document.createElement('li');
+        li.textContent = `${product.title} - $${product.price}`;
+        
+        // Botón para eliminar
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Eliminar';
+        deleteButton.addEventListener('click', () => {
+            socket.emit('deleteProduct', product.id); // Emitir el evento para eliminar
+        });
+        
+        li.appendChild(deleteButton);
+        productList.appendChild(li);
+    });
+});
+
 });

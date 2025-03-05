@@ -14,19 +14,8 @@ const server = app.listen(PORT, () => {
 });
 const io = new Server(server);
 
-// Configuración de Handlebars con helper 'extend'
-const hbs = handlebars.create({
-    defaultLayout: 'main',
-    helpers: {
-        extend: function(name, options) {
-            const layout = app.get('views') + '/' + name + '.handlebars';
-            return options.fn({ layout });
-        }
-    }
-});
-
-// Configuración del motor de plantillas
-app.engine('handlebars', hbs.engine);
+// Configuración de Handlebars
+app.engine('handlebars', handlebars.engine({ defaultLayout: 'main' }));
 app.set('view engine', 'handlebars');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -43,11 +32,33 @@ app.get('/', async (req, res) => {
     res.render('home', { title: 'Lista de Productos', products });
 });
 
-app.get('/realtimeproducts', (req, res) => {
-    res.render('realTimeProducts', { title: 'Productos en Tiempo Real' });
+app.get('/realtimeproducts', async (req, res) => {
+    const products = await productManager.getAll();
+    res.render('realTimeProducts', { title: 'Productos en Tiempo Real', products });
 });
 
 // Configuración de WebSocket
 io.on('connection', (socket) => {
     console.log('Nuevo cliente conectado');
+    
+    // Emitir la lista de productos cuando un cliente se conecta
+    socket.emit('productList', async () => await productManager.getAll());
+
+    // Escuchar evento de agregar producto
+    socket.on('addProduct', async (product) => {
+        await productManager.addProduct(product);  // Agregar el producto
+        const updatedProducts = await productManager.getAll();
+        io.emit('productList', updatedProducts);  // Emitir la lista actualizada
+    });
+
+    // Escuchar evento de eliminar producto
+    socket.on('deleteProduct', async (productId) => {
+        await productManager.deleteProduct(productId);  // Eliminar el producto
+        const updatedProducts = await productManager.getAll();
+        io.emit('productList', updatedProducts);  // Emitir la lista actualizada
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Cliente desconectado');
+    });
 });
